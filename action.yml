@@ -1,0 +1,60 @@
+name: "Setup ig"
+description: "Install the Inspektor Gadget ig CLI"
+branding:
+  icon: "terminal"
+  color: "blue"
+
+inputs:
+  version:
+    description: "Version of ig to install (e.g. v0.51.1). Defaults to latest."
+    required: false
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Determine version
+      id: version
+      shell: bash
+      run: |
+        VERSION="${{ inputs.version }}"
+        if [ "$VERSION" = "latest" ]; then
+          VERSION=$(curl -s https://api.github.com/repos/inspektor-gadget/inspektor-gadget/releases/latest | jq -r '.tag_name')
+        fi
+        # Ensure version starts with 'v'
+        if [[ ! "$VERSION" =~ ^v ]]; then
+          VERSION="v${VERSION}"
+        fi
+        echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+    - name: Determine architecture
+      id: arch
+      shell: bash
+      run: |
+        ARCH=$(uname -m)
+        case "$ARCH" in
+          x86_64)  ARCH="amd64" ;;
+          aarch64) ARCH="arm64" ;;
+          *)
+            echo "::error::Unsupported architecture: $ARCH"
+            exit 1
+            ;;
+        esac
+        echo "arch=${ARCH}" >> "$GITHUB_OUTPUT"
+
+    - name: Install ig
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        ARCH="${{ steps.arch.outputs.arch }}"
+        URL="https://github.com/inspektor-gadget/inspektor-gadget/releases/download/${VERSION}/ig-linux-${ARCH}-${VERSION}.tar.gz"
+
+        echo "Downloading ig ${VERSION} for linux/${ARCH}..."
+        curl -sSL "$URL" -o ig.tar.gz
+        tar -xzf ig.tar.gz ig
+        sudo install ig /usr/local/bin/ig
+        rm -f ig ig.tar.gz
+
+    - name: Verify installation
+      shell: bash
+      run: ig version
