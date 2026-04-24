@@ -1,5 +1,5 @@
 name: "Setup ig"
-description: "Install the Inspektor Gadget ig CLI"
+description: "Install the Inspektor Gadget ig and gadgetctl CLIs"
 branding:
   icon: "terminal"
   color: "blue"
@@ -55,6 +55,21 @@ runs:
         sudo install ig /usr/local/bin/ig
         rm -f ig ig.tar.gz
 
+    - name: Install gadgetctl
+      shell: bash
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+        ARCH="${{ steps.arch.outputs.arch }}"
+        URL="https://github.com/inspektor-gadget/inspektor-gadget/releases/download/${VERSION}/gadgetctl-linux-${ARCH}-${VERSION}.tar.gz"
+
+        echo "Downloading gadgetctl ${VERSION} for linux/${ARCH}..."
+        curl -sSL "$URL" -o gadgetctl.tar.gz
+        tar -xzf gadgetctl.tar.gz gadgetctl
+        sudo install gadgetctl /usr/local/bin/gadgetctl
+        rm -f gadgetctl gadgetctl.tar.gz
+
     - name: Verify installation
       shell: bash
-      run: ig version
+      run: |
+        ig version
+        gadgetctl version
