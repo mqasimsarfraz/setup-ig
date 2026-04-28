@@ -1,5 +1,5 @@
 name: "Setup ig"
-description: "Install the Inspektor Gadget ig and gadgetctl CLIs"
+description: "Install the Inspektor Gadget ig CLI (and optionally gadgetctl)"
 branding:
   icon: "terminal"
   color: "blue"
@@ -9,6 +9,10 @@ inputs:
     description: "Version of ig to install (e.g. v0.51.1). Defaults to latest."
     required: false
     default: "latest"
+  install-gadgetctl:
+    description: "Whether to also install the gadgetctl CLI."
+    required: false
+    default: "false"
 
 runs:
   using: "composite"
@@ -56,6 +60,7 @@ runs:
         rm -f ig ig.tar.gz
 
     - name: Install gadgetctl
+      if: inputs.install-gadgetctl == 'true'
       shell: bash
       run: |
         VERSION="${{ steps.version.outputs.version }}"
@@ -72,4 +77,6 @@ runs:
       shell: bash
       run: |
         ig version
-        gadgetctl version
+        if [ "${{ inputs.install-gadgetctl }}" = "true" ]; then
+          gadgetctl version
+        fi
